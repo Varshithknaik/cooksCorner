@@ -19,7 +19,7 @@ const sendMail = async (option) => {
         }
     });
     const { email, subject, template, data } = option;
-    const templatePath = path_1.default.join(__dirname, '../mails', template);
+    const templatePath = path_1.default.join('../mails', template);
     const html = await ejs_1.default.renderFile(templatePath, data);
     const mailOptions = {
         from: process.env.SMTP_MAIL,

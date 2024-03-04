@@ -25,7 +25,6 @@ describe('Registration', () => {
             body: {
                 name: 'Test User',
                 email: 'testuser@example.com',
-                password: 'password123',
             },
         };
         user_model_1.default.findOne.mockResolvedValue(null);

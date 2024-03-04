@@ -30,7 +30,6 @@ describe('Registration', () => {
       body: {
         name: 'Test User',
         email: 'testuser@example.com',
-        password: 'password123',
       },
     };
 
@@ -40,7 +39,7 @@ describe('Registration', () => {
       .post('/register')
       .send(mockRequest.body);
 
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(201);
     expect(response.body).toHaveProperty('status', 'success');
     expect(response.body).toHaveProperty('token');
  }, 5000);

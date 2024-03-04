@@ -4,84 +4,73 @@ import ErrorHandler from '../utils/errorHandler';
 import { Request, Response, NextFunction } from 'express';
 import userModel from '../model/user.model';
 import jwt from 'jsonwebtoken';
-import { encrypt } from '../utils/encryption';
 import sendMail from '../utils/sendMail';
-
 dotenv.config();
 
-// Define the shape of the registration request body
-type IRegistationBody = {
- name: string;
- email: string;
- password: string;
-};
+type IRegistrationBody = {
+  name: string;
+  email: string;
+  password: string;
+}
 
-// Registration handler
-export const registration = async (
- req: Request,
- res: Response,
- next: NextFunction
-) => {
- try {
-    const { name, email, password } = req.body as IRegistationBody;
-
-    // Validate input fields
-    if (!name || !email || !password) {
-      return next(new ErrorHandler('please fill all the fields', 400));
-    }
-
-    // Check if email already exists
-    const isEmailExist = await userModel.findOne({ email });
-    if (isEmailExist) {
-      return next(new ErrorHandler('email already exist', 400));
-    }
-
-    // Encrypt password
-    const encrypedPassword = encrypt(password);
-
-    // Prepare payload for JWT
-    const payload = {
-      name,
-      email,
-      password: encrypedPassword,
-    };
-
-    // Generate and sign JWT
-    const activationToken = jwt.sign(
-      payload,
-      process.env.ACTIVATION_TOKEN_SECRET ?? 'secret',
-      { expiresIn: '1h' }
-    );
-
-    // Generate activation code
-    const { activationCode } = tokenGenerator();
-
-    // Prepare data for email
-    const data = {
-      name,
-      activationCode,
-    };
-
-    // Send activation email
-    await sendMail({
-      email,
-      subject: 'Account Activation',
-      template: 'activation-mail.ejs',
-      data,
+export const registration = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { name , email } = req.body as IRegistrationBody;
+    validateInput( name, email);
+    await checkIfEmailExists(email);
+    const activationToken = generateActivationToken( email );
+    const activationCode = generateActivationCode();
+    await sendActivationEmail(email, name, activationCode);
+    res.status(201).json({
+      message: 'Registration successful',
+      data: {
+        activationToken,
+        activationCode
+      }
     });
+  } catch (error: any) {
+    handleRegistrationError(error, next);
+  }
+}
 
-    // Send success response
-    res.status(200).json({
-      status: 'success',
-      token: activationToken,
-    });
- } catch (error: any) {
-    return next(new ErrorHandler(error.message, 400));
+const validateInput = (name: string, email: string) => {
+  if (!name || !email) {
+     throw handleError('Please fill in all the fields', 400);
+  }
  }
-};
 
-// Function to generate activation code
-const tokenGenerator = () => {
- const activationCode = Math.floor(100000 + Math.random() * 900000).toString();
- return { activationCode };
-};
+const checkIfEmailExists = async (email: string) => {
+  const isEmailExist = await userModel.findOne({ email });
+  if (isEmailExist) {
+    throw handleError('Email already exists', 400);
+  }
+}
+
+const generateActivationToken = ( email: string) => {
+  const payload = { email};
+  return jwt.sign(payload, process.env.ACTIVATION_TOKEN_SECRET ?? 'secret', { expiresIn: '1h' });
+}
+
+const generateActivationCode = () => {
+  const activationCode = Math.floor(100000 + Math.random() * 900000).toString();
+  return activationCode;
+}
+
+const sendActivationEmail = async (email: string, name: string, activationCode: string) => {
+  const data = { name, activationCode };
+  await sendMail({
+    email,
+    subject: 'Account Activation',
+    template: 'activation-mail.ejs',
+    data
+  });
+}
+
+
+const handleRegistrationError = (error: any, next: NextFunction) => {
+  return next(handleError(error.message, 400));
+}
+
+const handleError = ( message:string , status:number) => {
+  return new ErrorHandler(message, status);
+}
