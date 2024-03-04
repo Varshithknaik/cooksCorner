@@ -5,6 +5,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { rateLimit } from "express-rate-limit";
 import { ErrorMiddleware } from './middleware/error';
+import userRouter from './routes/user.routes';
 
 //body-parsers
 app.use(express.json({ limit: '50mb'}));
@@ -25,6 +26,8 @@ const limiter = rateLimit({
     error: 'Too many requests, please try again later'
   },
 })
+
+app.use('/api/v1' , userRouter)
 
 app.get('/test' , (req:Request , res:Response) => {
   res.status(200).json({
