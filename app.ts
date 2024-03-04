@@ -26,7 +26,7 @@ const limiter = rateLimit({
   },
 })
 
-app.get('/test' , (req:Request , res:Response , next: NextFunction) => {
+app.get('/test' , (req:Request , res:Response) => {
   res.status(200).json({
     success: true,
     message: "API is Working Fine"
@@ -34,6 +34,7 @@ app.get('/test' , (req:Request , res:Response , next: NextFunction) => {
 })
 
 app.all('*', ( req: Request , res: Response , next:NextFunction) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const err = new Error(`Route ${req.originalUrl} not found`) as any;
   err.statusCode(404);
   next(err);
