@@ -22,11 +22,8 @@ export const registration = async (req: Request, res: Response, next: NextFuncti
     const activationCode = generateActivationCode();
     await sendActivationEmail(email, name, activationCode);
     res.status(201).json({
-      message: 'Registration successful',
-      data: {
-        activationToken,
-        activationCode
-      }
+      status: 'success',
+      token: activationToken
     });
   } catch (error: any) {
     handleRegistrationError(error, next);

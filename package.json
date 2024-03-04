@@ -10,7 +10,7 @@
     "dev": "ts-node-dev --respawn --transpile-only server.ts",
     "start": "node build/server.js",
     "build": "tsc",
-    "test": "jest",
+    "test": "jest --watchAll",
     "test:coverage": "jest --coverage"
   },
   "author": "Varshith K",
