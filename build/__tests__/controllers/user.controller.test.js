@@ -3,36 +3,64 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-/* eslint-disable @typescript-eslint/no-explicit-any */
 const user_controller_1 = require("../../controllers/user.controller");
 const user_model_1 = __importDefault(require("../../model/user.model"));
-const supertest_1 = __importDefault(require("supertest"));
-const express_1 = __importDefault(require("express"));
-// Mock the userModel with the defined interface
-jest.mock('../../model/user.model', () => ({
-    findOne: jest.fn(),
-    create: jest.fn(),
-}));
-const app = (0, express_1.default)();
-app.use(express_1.default.json());
-app.post('/register', user_controller_1.registration);
-describe('Registration', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-    it('should register a new user successfully', async () => {
-        const mockRequest = {
+const errorHandler_1 = __importDefault(require("../../utils/errorHandler"));
+jest.mock('../../model/user.model');
+jest.mock('../../utils/errorHandler');
+describe('Registration user', () => {
+    let req = {};
+    const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+    };
+    const next = jest.fn();
+    it('should return 201 and a token', async () => {
+        req = {
             body: {
-                name: 'Test User',
-                email: 'testuser@example.com',
+                name: 'testUser',
+                email: 'test2@gmail.com',
             },
         };
-        user_model_1.default.findOne.mockResolvedValue(null);
-        const response = await (0, supertest_1.default)(app)
-            .post('/register')
-            .send(mockRequest.body);
-        expect(response.status).toBe(200);
-        expect(response.body).toHaveProperty('status', 'success');
-        expect(response.body).toHaveProperty('token');
-    }, 5000);
+        user_model_1.default.findOne = jest.fn().mockResolvedValue({});
+        await (0, user_controller_1.registration)(req, res, next);
+        expect(res.status).toHaveBeenCalledWith(201);
+        expect(res.json).toHaveBeenCalledWith({
+            status: 'success',
+            token: expect.any(String),
+        });
+    }, 50000);
+    it('should throw error if parameter is empty', async () => {
+        req = {
+            body: {
+                name: 'testUser',
+                email: '',
+            },
+        };
+        const next = jest.fn();
+        const errorHandlerInstance = new errorHandler_1.default("User already exist", 409);
+        next.mockImplementation((error) => {
+            expect(error.message).toEqual(errorHandlerInstance.message);
+            return error;
+        });
+        await (0, user_controller_1.registration)(req, res, next);
+        expect(next).toHaveBeenCalledTimes(1);
+    });
+    it('should throw error if user exist', async () => {
+        req = {
+            body: {
+                name: 'testUser',
+                email: 'test@user',
+            },
+        };
+        const next = jest.fn();
+        user_model_1.default.findOne = jest.fn().mockResolvedValue({ _id: 1, name: 'testUser' });
+        const errorHandlerInstance = new errorHandler_1.default("User already exist", 409);
+        next.mockImplementation((error) => {
+            expect(error.message).toEqual(errorHandlerInstance.message);
+            return error;
+        });
+        await (0, user_controller_1.registration)(req, res, next);
+        expect(next).toHaveBeenCalledTimes(1);
+    });
 });

@@ -1,0 +1,66 @@
+const request = require('supertest');
+const app = require('../app'); // Adjust the path to your Express app file
+const { Mongoose } = require('mongoose');
+const { ErrorHandler } = require('../utils/errorHandler');
+
+// Mock the Mongoose CastError
+jest.mock('mongoose', () => {
+ return {
+    CastError: jest.fn().mockImplementation(() => {
+      return {
+        name: 'CastError',
+        path: 'id',
+      };
+    }),
+ };
+});
+
+// Mock the jsonwebtoken JsonWebTokenError
+jest.mock('jsonwebtoken', () => ({
+ JsonWebTokenError: jest.fn().mockImplementation(() => {
+    return {
+      name: 'JsonWebTokenError',
+    };
+ }),
+}));
+
+// Mock the jsonwebtoken TokenExpiredError
+jest.mock('jsonwebtoken', () => ({
+ TokenExpiredError: jest.fn().mockImplementation(() => {
+    return {
+      name: 'TokenExpiredError',
+    };
+ }),
+}));
+
+describe('Error Middleware', () => {
+ it('should handle CastError', async () => {
+    // Simulate a CastError by trying to access a non-existent resource
+    const res = await request(app).get('/non-existent-resource');
+    expect(res.status).toEqual(404);
+    expect(res.body.message).toContain('Resource not found');
+ });
+
+ it('should handle duplicate key error', async () => {
+    // Simulate a duplicate key error by trying to insert a duplicate value
+    const res = await request(app).post('/some-resource').send({
+      // Data that would cause a duplicate key error
+    });
+    expect(res.status).toEqual(409);
+    expect(res.body.message).toContain('Resource already exists');
+ });
+
+ it('should handle JsonWebTokenError', async () => {
+    // Simulate a JsonWebTokenError by sending an invalid token
+    const res = await request(app).get('/protected-resource').set('Authorization', 'Bearer invalidToken');
+    expect(res.status).toEqual(400);
+    expect(res.body.message).toEqual('Invalid JWT token');
+ });
+
+ it('should handle TokenExpiredError', async () => {
+    // Simulate a TokenExpiredError by sending an expired token
+    const res = await request(app).get('/protected-resource').set('Authorization', 'Bearer expiredToken');
+    expect(res.status).toEqual(400);
+    expect(res.body.message).toEqual('Json Wen Token is Expired, try again');
+ });
+});

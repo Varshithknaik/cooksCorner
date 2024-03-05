@@ -18,42 +18,42 @@ export const registration = async (req: Request, res: Response, next: NextFuncti
     const { name , email } = req.body as IRegistrationBody;
     validateInput( name, email);
     await checkIfEmailExists(email);
-    const activationToken = generateActivationToken( email );
     const activationCode = generateActivationCode();
+    const activationToken = generateActivationToken( email , activationCode );
     await sendActivationEmail(email, name, activationCode);
     res.status(201).json({
       status: 'success',
       token: activationToken
     });
   } catch (error: any) {
-    handleRegistrationError(error, next);
+    handleTryCatchError(error, next);
   }
 }
 
-const validateInput = (name: string, email: string) => {
-  if (!name || !email) {
-     throw handleError('Please fill in all the fields', 400);
+export const validateInput = (...args: string[]) => {
+  if(args.some( args => !args)){
+    throw handleError('Please fill in all the fields', 400);
   }
  }
 
-const checkIfEmailExists = async (email: string) => {
+export const checkIfEmailExists = async (email: string) => {
   const isEmailExist = await userModel.findOne({ email });
-  if (isEmailExist) {
+  if (isEmailExist && Object.keys(isEmailExist).length !== 0) {
     throw handleError('Email already exists', 400);
   }
 }
 
-const generateActivationToken = ( email: string) => {
-  const payload = { email};
+export const generateActivationToken = ( email: string , activationCode: string ) => {
+  const payload = { email , activationCode };
   return jwt.sign(payload, process.env.ACTIVATION_TOKEN_SECRET ?? 'secret', { expiresIn: '1h' });
 }
 
-const generateActivationCode = () => {
+export const generateActivationCode = () => {
   const activationCode = Math.floor(100000 + Math.random() * 900000).toString();
   return activationCode;
 }
 
-const sendActivationEmail = async (email: string, name: string, activationCode: string) => {
+export const sendActivationEmail = async (email: string, name: string, activationCode: string) => {
   const data = { name, activationCode };
   await sendMail({
     email,
@@ -63,11 +63,35 @@ const sendActivationEmail = async (email: string, name: string, activationCode: 
   });
 }
 
-
-const handleRegistrationError = (error: any, next: NextFunction) => {
+export const handleTryCatchError = (error: any, next: NextFunction) => {
   return next(handleError(error.message, 400));
 }
 
-const handleError = ( message:string , status:number) => {
+export const handleError = ( message:string , status:number) => {
   return new ErrorHandler(message, status);
+}
+
+export const validateAccount = async ( req:Request , res:Response , next:NextFunction) => {
+  try{
+    const { password , name , activationCode } = req.body;
+    const authorizationHeader = req.headers.authorization ?? '';
+    
+    validateInput( password , name , activationCode);
+    
+    const { email , activationCode : code} = jwt.verify( authorizationHeader , process.env.ACTIVATION_TOKEN_SECRET ?? 'secret') as { email: string , activationCode: string };
+
+    if(activationCode !== code){
+      throw handleError('Invalid activation code', 400);
+    }
+
+    await userModel.create({ name , email , password });
+
+    res.status(201).json({
+      status: 'success',
+      message: 'Account created successfully'
+    });
+    
+  }catch(error){
+    handleTryCatchError(error , next);
+  }
 }

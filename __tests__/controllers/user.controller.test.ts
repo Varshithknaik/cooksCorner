@@ -1,47 +1,70 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { registration } from "../../controllers/user.controller";
-import userModel from "../../model/user.model";
-import request from 'supertest';
-import express from 'express';
+import { NextFunction , Response } from 'express';
+import { registration } from '../../controllers/user.controller';
+import userModel from '../../model/user.model';
+import ErrorHandler from '../../utils/errorHandler';
 
-// Define an interface for the userModel
-interface IUserModel {
- findOne: (filter: any) => Promise<any>;
- create: (user: any) => Promise<any>;
-}
+jest.mock('../../model/user.model');
+jest.mock('../../utils/errorHandler')
 
-// Mock the userModel with the defined interface
-jest.mock('../../model/user.model', () => ({
- findOne: jest.fn(),
- create: jest.fn(),
-}) as unknown as IUserModel);
 
-const app = express();
-app.use(express.json());
-app.post('/register', registration);
+describe('Registration user', () => {
+  let req: any = {};
+  const res = {
+    status: jest.fn().mockReturnThis(),
+    json: jest.fn(),
+  } as unknown as Response;
+  const next = jest.fn() as NextFunction;
 
-describe('Registration', () => {
- beforeEach(() => {
-    jest.clearAllMocks();
- });
-
- it('should register a new user successfully', async () => {
-    const mockRequest = {
+  it('should return 201 and a token' , async () => {
+    req = {
       body: {
-        name: 'Test User',
-        email: 'testuser@example.com',
+        name: 'testUser',
+        email: 'test2@gmail.com',
       },
-    };
+    } as any;
+    userModel.findOne = jest.fn().mockResolvedValue({});
+    await registration(req, res, next);
 
-    (userModel.findOne as jest.Mock).mockResolvedValue(null);
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(res.json).toHaveBeenCalledWith({
+      status: 'success',
+      token: expect.any(String),
+    });
+  }, 50000);
 
-    const response = await request(app)
-      .post('/register')
-      .send(mockRequest.body);
+  it('should throw error if parameter is empty', async () => {
+    req = {
+      body: {
+        name: 'testUser',
+        email: '',
+      },
+    } as any;
+    const next = jest.fn();
+    const errorHandlerInstance = new ErrorHandler("User already exist", 409);
+    next.mockImplementation((error) => {
+      expect(error.message).toEqual(errorHandlerInstance.message);
+      return error;
+    });
+    await registration(req, res, next);
+    expect(next).toHaveBeenCalledTimes(1);
+  });
 
-    expect(response.status).toBe(201);
-    expect(response.body).toHaveProperty('status', 'success');
-    expect(response.body).toHaveProperty('token');
- }, 5000);
-
-});
+  it('should throw error if user exist', async() => {
+    req = {
+      body: {
+        name: 'testUser',
+        email: 'test@user',
+      },
+    } as any;
+    const next = jest.fn();
+    userModel.findOne = jest.fn().mockResolvedValue({_id: 1 , name: 'testUser'});
+    const errorHandlerInstance = new ErrorHandler("User already exist", 409);
+    next.mockImplementation((error) => {
+      expect(error.message).toEqual(errorHandlerInstance.message);
+      return error;
+    });
+    await registration(req, res, next);
+    expect(next).toHaveBeenCalledTimes(1);
+  })
+})

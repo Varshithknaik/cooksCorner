@@ -7,8 +7,7 @@ const app_1 = require("./app");
 const db_1 = __importDefault(require("./utils/db"));
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
-const PORT = process.env.PORT ?? 8000;
-app_1.app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+app_1.app.listen(process.env.PORT || 3001, () => {
+    console.log(`Server is running on port ${process.env.PORT}`);
     (0, db_1.default)();
 });

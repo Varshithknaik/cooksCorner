@@ -1,4 +1,4 @@
-import express, { NextFunction , Request , Response } from 'express';
+import express, { Request , Response } from 'express';
 
 export const app = express();
 import cors from 'cors';
@@ -36,11 +36,11 @@ app.get('/test' , (req:Request , res:Response) => {
   })
 })
 
-app.all('*', ( req: Request , res: Response , next:NextFunction) => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const err = new Error(`Route ${req.originalUrl} not found`) as any;
-  err.statusCode(404);
-  next(err);
+app.all('*', ( req: Request , res: Response ) => {
+  res.status(404).json({
+    success: false,
+    message: `Route ${req.originalUrl} not found`
+  })
 })
 
 app.use(limiter);

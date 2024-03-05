@@ -34,11 +34,11 @@ exports.app.get('/test', (req, res) => {
         message: "API is Working Fine"
     });
 });
-exports.app.all('*', (req, res, next) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const err = new Error(`Route ${req.originalUrl} not found`);
-    err.statusCode(404);
-    next(err);
+exports.app.all('*', (req, res) => {
+    res.status(404).json({
+        success: false,
+        message: `Route ${req.originalUrl} not found`
+    });
 });
 exports.app.use(limiter);
 exports.app.use(error_1.ErrorMiddleware);
