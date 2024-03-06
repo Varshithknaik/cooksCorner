@@ -17,13 +17,13 @@ export const registration = async (req: Request, res: Response, next: NextFuncti
   try {
     const { name , email } = req.body as IRegistrationBody;
     validateInput( name, email);
-    console.log("20")
     await checkIfEmailExists(email);
-    console.log("22")
     const activationCode = generateActivationCode();
+    console.log("22")
     const activationToken = generateActivationToken( email , activationCode );
-    await sendActivationEmail(email, name, activationCode);
     console.log("24")
+    await sendActivationEmail(email, name, activationCode);
+    console.log("26")
     res.status(201).json({
       status: 'success',
       token: activationToken
