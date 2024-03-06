@@ -19,9 +19,7 @@ export const registration = async (req: Request, res: Response, next: NextFuncti
     validateInput( name, email);
     await checkIfEmailExists(email);
     const activationCode = generateActivationCode();
-    console.log("22")
     const activationToken = generateActivationToken( email , activationCode );
-    console.log("24")
     await sendActivationEmail(email, name, activationCode);
     console.log("26")
     res.status(201).json({
