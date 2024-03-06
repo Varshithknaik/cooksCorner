@@ -59,3 +59,4 @@ describe('Registration integration test', () => {
  })
 
 });
+
