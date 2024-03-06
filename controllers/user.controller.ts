@@ -21,7 +21,6 @@ export const registration = async (req: Request, res: Response, next: NextFuncti
     const activationCode = generateActivationCode();
     const activationToken = generateActivationToken( email , activationCode );
     await sendActivationEmail(email, name, activationCode);
-    console.log("26")
     res.status(201).json({
       status: 'success',
       token: activationToken
@@ -72,14 +71,23 @@ export const handleError = ( message:string , status:number) => {
   return new ErrorHandler(message, status);
 }
 
+export const authorizationValidation = (auth:string[]) => {
+
+  if(auth.length !== 2 || !auth[0].startsWith('Bearer')){
+    throw handleError('Invalid authorization header', 400);
+  }
+  return auth[1]
+}
+
 export const validateAccount = async ( req:Request , res:Response , next:NextFunction) => {
   try{
     const { password , name , activationCode } = req.body;
     const authorizationHeader = req.headers.authorization ?? '';
+    const auth = authorizationValidation(authorizationHeader.split(' '));
     
     validateInput( password , name , activationCode);
     
-    const { email , activationCode : code} = jwt.verify( authorizationHeader , process.env.ACTIVATION_TOKEN_SECRET ?? 'secret') as { email: string , activationCode: string };
+    const { email , activationCode : code} = jwt.verify( auth , process.env.ACTIVATION_TOKEN_SECRET ?? 'secret') as { email: string , activationCode: string };
 
     if(activationCode !== code){
       throw handleError('Invalid activation code', 400);
@@ -89,7 +97,7 @@ export const validateAccount = async ( req:Request , res:Response , next:NextFun
 
     res.status(201).json({
       status: 'success',
-      message: 'Account created successfully'
+      message: 'Account validated'
     });
     
   }catch(error){
