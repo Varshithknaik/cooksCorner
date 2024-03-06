@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.validateAccount = exports.handleError = exports.handleTryCatchError = exports.sendActivationEmail = exports.generateActivationCode = exports.generateActivationToken = exports.checkIfEmailExists = exports.validateInput = exports.registration = void 0;
+exports.validateAccount = exports.authorizationValidation = exports.handleError = exports.handleTryCatchError = exports.sendActivationEmail = exports.generateActivationCode = exports.generateActivationToken = exports.checkIfEmailExists = exports.validateInput = exports.registration = void 0;
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const dotenv_1 = __importDefault(require("dotenv"));
 const errorHandler_1 = __importDefault(require("../utils/errorHandler"));
@@ -17,11 +17,8 @@ const registration = async (req, res, next) => {
         (0, exports.validateInput)(name, email);
         await (0, exports.checkIfEmailExists)(email);
         const activationCode = (0, exports.generateActivationCode)();
-        console.log("22");
         const activationToken = (0, exports.generateActivationToken)(email, activationCode);
-        console.log("24");
         await (0, exports.sendActivationEmail)(email, name, activationCode);
-        console.log("26");
         res.status(201).json({
             status: 'success',
             token: activationToken
@@ -73,19 +70,27 @@ const handleError = (message, status) => {
     return new errorHandler_1.default(message, status);
 };
 exports.handleError = handleError;
+const authorizationValidation = (auth) => {
+    if (auth.length !== 2 || !auth[0].startsWith('Bearer')) {
+        throw (0, exports.handleError)('Invalid authorization header', 400);
+    }
+    return auth[1];
+};
+exports.authorizationValidation = authorizationValidation;
 const validateAccount = async (req, res, next) => {
     try {
         const { password, name, activationCode } = req.body;
         const authorizationHeader = req.headers.authorization ?? '';
+        const auth = (0, exports.authorizationValidation)(authorizationHeader.split(' '));
         (0, exports.validateInput)(password, name, activationCode);
-        const { email, activationCode: code } = jsonwebtoken_1.default.verify(authorizationHeader, process.env.ACTIVATION_TOKEN_SECRET ?? 'secret');
+        const { email, activationCode: code } = jsonwebtoken_1.default.verify(auth, process.env.ACTIVATION_TOKEN_SECRET ?? 'secret');
         if (activationCode !== code) {
             throw (0, exports.handleError)('Invalid activation code', 400);
         }
         await user_model_1.default.create({ name, email, password });
         res.status(201).json({
             status: 'success',
-            message: 'Account created successfully'
+            message: 'Account validated'
         });
     }
     catch (error) {

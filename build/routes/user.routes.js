@@ -8,4 +8,5 @@ const user_controller_1 = require("../controllers/user.controller");
 const catchAsyncError_1 = require("../middleware/catchAsyncError");
 const userRouter = express_1.default.Router();
 userRouter.post('/register', (0, catchAsyncError_1.catchAsyncError)(user_controller_1.registration));
+userRouter.post('/validate', (0, catchAsyncError_1.catchAsyncError)(user_controller_1.validateAccount));
 exports.default = userRouter;

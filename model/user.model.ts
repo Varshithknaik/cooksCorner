@@ -13,7 +13,8 @@ export interface IUser extends Document {
   },
   recipes: Array<{ recipeId: string}>,
   comparePassword : (enteredPassword: string) => Promise<boolean>,
-
+  signAccessToken: () => Promise<string>;
+  signRefreshToken: () => Promise<string>;
 }
 
 const userSchema: Schema<IUser> = new mongoose.Schema({
