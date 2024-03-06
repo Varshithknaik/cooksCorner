@@ -15,10 +15,13 @@ const registration = async (req, res, next) => {
     try {
         const { name, email } = req.body;
         (0, exports.validateInput)(name, email);
+        console.log("20");
         await (0, exports.checkIfEmailExists)(email);
+        console.log("22");
         const activationCode = (0, exports.generateActivationCode)();
         const activationToken = (0, exports.generateActivationToken)(email, activationCode);
         await (0, exports.sendActivationEmail)(email, name, activationCode);
+        console.log("24");
         res.status(201).json({
             status: 'success',
             token: activationToken
