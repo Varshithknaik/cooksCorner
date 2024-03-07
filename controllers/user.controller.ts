@@ -5,6 +5,7 @@ import userModel from '../model/user.model';
 import jwt from 'jsonwebtoken';
 import sendMail from '../utils/sendMail';
 import { authorizationValidation, handleError, handleTryCatchError } from '../utils/utilFunction';
+import { sendToken } from '../utils/sendToken';
 dotenv.config();
 
 type IRegistrationBody = {
@@ -83,6 +84,25 @@ export const validateAccount = async ( req:Request , res:Response , next:NextFun
       message: 'Account validated'
     });
     
+  }catch(error){
+    handleTryCatchError(error , next);
+  }
+}
+
+export const login = async ( req:Request , res: Response , next: NextFunction ) => {
+  try{
+    const { email , password } = req.body;
+    validateInput( email , password );
+    const user = await userModel.findOne({ email });
+    if(!user){
+      throw handleError('Invalid email or password', 400);
+    }
+    const isPasswordValid = await user.comparePassword(password);
+    if(!isPasswordValid){
+      throw handleError('Invalid email or password', 400);
+    }
+
+    sendToken(user , 201 , res)
   }catch(error){
     handleTryCatchError(error , next);
   }
