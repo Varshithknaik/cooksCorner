@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import dotenv from 'dotenv';
-import ErrorHandler from '../utils/errorHandler';
 import { Request, Response, NextFunction } from 'express';
 import userModel from '../model/user.model';
 import jwt from 'jsonwebtoken';
 import sendMail from '../utils/sendMail';
+import { authorizationValidation, handleError, handleTryCatchError } from '../utils/utilFunction';
 dotenv.config();
 
 type IRegistrationBody = {
@@ -62,23 +62,6 @@ export const sendActivationEmail = async (email: string, name: string, activatio
     data
   });
 }
-
-export const handleTryCatchError = (error: any, next: NextFunction) => {
-  return next(handleError(error.message, 400));
-}
-
-export const handleError = ( message:string , status:number) => {
-  return new ErrorHandler(message, status);
-}
-
-export const authorizationValidation = (auth:string[]) => {
-
-  if(auth.length !== 2 || !auth[0].startsWith('Bearer')){
-    throw handleError('Invalid authorization header', 400);
-  }
-  return auth[1]
-}
-
 export const validateAccount = async ( req:Request , res:Response , next:NextFunction) => {
   try{
     const { password , name , activationCode } = req.body;
