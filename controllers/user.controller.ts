@@ -6,6 +6,7 @@ import jwt from 'jsonwebtoken';
 import sendMail from '../utils/sendMail';
 import { authorizationValidation, handleError, handleTryCatchError } from '../utils/utilFunction';
 import { sendToken } from '../utils/sendToken';
+import { redis } from '../utils/redis';
 dotenv.config();
 
 type IRegistrationBody = {
@@ -105,5 +106,31 @@ export const login = async ( req:Request , res: Response , next: NextFunction ) 
     sendToken(user , 201 , res)
   }catch(error){
     handleTryCatchError(error , next);
+  }
+}
+
+export const logout = async(req: Request , res: Response , next: NextFunction) => {
+  try {
+    res.cookie('refreshToken', '' , { maxAge: 1});
+    const userId = req.user?._id ?? '';
+    await redis.del(userId);
+    res.status(200).json({
+      status: 'success',
+      message: 'Logout successfully'
+    });
+
+  } catch (error) {
+    handleTryCatchError(error, next);
+  }
+}
+
+export const userInfo = async( req: Request , res:Response , next:NextFunction ) => {
+  try {
+    res.status(200).json({
+      status: 'success',
+      data: req.user
+    });
+  } catch (error) {
+    handleTryCatchError(error, next);
   }
 }
