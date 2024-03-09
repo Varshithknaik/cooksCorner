@@ -71,7 +71,6 @@ export const validateAccount = async ( req:Request , res:Response , next:NextFun
     const auth = authorizationValidation(authorizationHeader.split(' '));
     
     validateInput( password , name , activationCode);
-    
     const { email , activationCode : code} = jwt.verify( auth , process.env.ACTIVATION_TOKEN_SECRET ?? 'secret') as { email: string , activationCode: string };
 
     if(activationCode !== code){
@@ -96,7 +95,7 @@ export const login = async ( req:Request , res: Response , next: NextFunction ) 
     validateInput( email , password );
     const user = await userModel.findOne({ email });
     if(!user){
-      throw handleError('Invalid email or password', 400);
+      throw handleError('User does not exist', 400);
     }
     const isPasswordValid = await user.comparePassword(password);
     if(!isPasswordValid){

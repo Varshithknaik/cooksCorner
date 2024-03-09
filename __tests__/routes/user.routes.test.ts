@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// import { registration } from "../../controllers/user.controller";
 import userModel from "../../model/user.model";
 import request from 'supertest';
 import  {app}  from '../../app';
@@ -168,7 +167,6 @@ describe('Validation account integration test', () => {
       .post('/api/v1/validate')
       .set('authorization', mockAuthorizationHeader)
       .send(mockRequestBody);
-
     expect(response.status).toBe(201);
     expect(response.body).toHaveProperty('status', 'success');
     expect(response.body).toHaveProperty('message', 'Account validated');
