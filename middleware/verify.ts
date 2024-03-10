@@ -10,7 +10,6 @@ export const verify = async ( req:Request , res: Response , next: NextFunction) 
     const auth = authorizationValidation(authorization.split(' '));
 
     const decoded = await jwt.verify( auth , process.env.JWT_SECRET ??'secret'  ) as { _id: string };
-    console.log(decoded);
     if(!decoded){
       next(handleError('Invalid token', 403))
     }

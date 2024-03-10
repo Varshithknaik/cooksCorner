@@ -12,7 +12,6 @@ const verify = async (req, res, next) => {
         const authorization = req.headers.authorization ?? '';
         const auth = (0, utilFunction_1.authorizationValidation)(authorization.split(' '));
         const decoded = await jsonwebtoken_1.default.verify(auth, process.env.JWT_SECRET ?? 'secret');
-        console.log(decoded);
         if (!decoded) {
             next((0, utilFunction_1.handleError)('Invalid token', 403));
         }
