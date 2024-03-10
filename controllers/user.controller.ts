@@ -5,8 +5,9 @@ import userModel from '../model/user.model';
 import jwt from 'jsonwebtoken';
 import sendMail from '../utils/sendMail';
 import { authorizationValidation, handleError, handleTryCatchError } from '../utils/utilFunction';
-import { sendToken } from '../utils/sendToken';
+import { refreshTokenCookieOptions, sendToken } from '../utils/sendToken';
 import { redis } from '../utils/redis';
+import { encrypt } from '../utils/encryption';
 dotenv.config();
 
 type IRegistrationBody = {
@@ -21,7 +22,8 @@ export const registration = async (req: Request, res: Response, next: NextFuncti
     validateInput( name, email);
     await checkIfEmailExists(email);
     const activationCode = generateActivationCode();
-    const activationToken = generateActivationToken( email , activationCode );
+    const payload = { email , activationCode};
+    const activationToken = generateActivationToken( payload , '1h' );
     await sendActivationEmail(email, name, activationCode);
     res.status(201).json({
       status: 'success',
@@ -45,9 +47,8 @@ export const checkIfEmailExists = async (email: string) => {
   }
 }
 
-export const generateActivationToken = ( email: string , activationCode: string ) => {
-  const payload = { email , activationCode };
-  return jwt.sign(payload, process.env.ACTIVATION_TOKEN_SECRET ?? 'secret', { expiresIn: '1h' });
+export const generateActivationToken = ( payload: {[key:string] : string } , expiration:string ) => {
+  return jwt.sign(payload, process.env.ACTIVATION_TOKEN_SECRET ?? 'secret', { expiresIn: expiration });
 }
 
 export const generateActivationCode = () => {
@@ -124,12 +125,44 @@ export const logout = async(req: Request , res: Response , next: NextFunction) =
 }
 
 export const userInfo = async( req: Request , res:Response , next:NextFunction ) => {
+  const encryptedBody = encrypt( JSON.stringify(req.user) )
   try {
     res.status(200).json({
       status: 'success',
-      data: req.user
+      data: encryptedBody
     });
   } catch (error) {
+    handleTryCatchError(error, next);
+  }
+}
+
+export const refresh = async( req: Request , res: Response , next:NextFunction) => {
+  try{
+    const token = req.cookies.refreshToken;
+
+    const decoded = await jwt.sign( token , process.env.REFRESH_TOKEN_SECRET ?? 'secret') as unknown as { _id: string};
+    if(!decoded){
+      next(handleError('Could not refresh the token', 401))
+    }
+
+    const session = await redis.get(decoded?._id);
+
+    if(!session){
+      next(handleError('Session expired please login again', 401))
+    }
+
+    const user = JSON.parse(session as string);
+
+    const refreshToken = await generateActivationToken({ _id: user._id } , '7d');
+    const accessToken = await generateActivationToken({ _id: user._id } , '5m');
+    await redis.set(user._id, JSON.stringify(user), 'EX', 60 * 60 * 24 * 7);
+    res.cookie('refreshToken', refreshToken , refreshTokenCookieOptions);
+
+    res.status(200).json({
+      status: 'success',
+      accessToken
+    });
+  }catch(error){
     handleTryCatchError(error, next);
   }
 }

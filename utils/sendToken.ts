@@ -2,6 +2,7 @@
 import { Response } from "express";
 import { IUser } from "../model/user.model";
 import { redis } from "./redis";
+import { encrypt } from "./encryption";
 
 interface ICookie{
   maxAge: number;
@@ -26,9 +27,10 @@ export const sendToken = async (user: IUser , status:number , res: Response ) =>
   res.cookie('refreshToken' , refreshToken , refreshTokenCookieOptions)
   
   await redis.set(user._id , JSON.stringify(userWithoutPassword) , "EX" , 7 * 24 * 60 * 60)
-
-  res.status(status).json({
-    accessToken,
-    user: userWithoutPassword
-  })
+  const encryptedBody = encrypt(JSON.stringify({
+      accessToken,
+      user: userWithoutPassword
+    }))
+  console.log(encryptedBody);
+  res.status(status).json(encryptedBody)
 }

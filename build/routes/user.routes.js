@@ -13,4 +13,5 @@ userRouter.post('/validate', (0, catchAsyncError_1.catchAsyncError)(user_control
 userRouter.post('/login', (0, catchAsyncError_1.catchAsyncError)(user_controller_1.login));
 userRouter.get('/logout', (0, catchAsyncError_1.catchAsyncError)(verify_1.verify), (0, catchAsyncError_1.catchAsyncError)(user_controller_1.logout));
 userRouter.get('/me', (0, catchAsyncError_1.catchAsyncError)(verify_1.verify), (0, catchAsyncError_1.catchAsyncError)(user_controller_1.userInfo));
+userRouter.get('/refresh', (0, catchAsyncError_1.catchAsyncError)(user_controller_1.refresh));
 exports.default = userRouter;

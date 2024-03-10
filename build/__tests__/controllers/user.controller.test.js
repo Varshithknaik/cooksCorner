@@ -7,7 +7,6 @@ const user_controller_1 = require("../../controllers/user.controller");
 const user_model_1 = __importDefault(require("../../model/user.model"));
 const errorHandler_1 = __importDefault(require("../../utils/errorHandler"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const sendToken_1 = require("../../utils/sendToken");
 const redis_1 = require("../../utils/redis");
 jest.mock('../../model/user.model');
 jest.mock('../../utils/errorHandler', () => {
@@ -138,19 +137,8 @@ describe('login', () => {
             signAccessToken: jest.fn().mockResolvedValue('token'),
             signRefreshToken: jest.fn().mockResolvedValue('refreshToken'),
         });
-        const mockedSendToken = sendToken_1.sendToken;
-        mockedSendToken.mockImplementation(async (user, status, res) => {
-            res.status(status).json({
-                accessToken: 'accessToken',
-                user
-            });
-        });
         await (0, user_controller_1.login)(req, res, next);
         expect(res.status).toHaveBeenCalledWith(201);
-        expect(res.json).toHaveBeenCalledWith({
-            accessToken: 'accessToken',
-            user: expect.anything(),
-        });
     });
 });
 describe('logout ', () => {

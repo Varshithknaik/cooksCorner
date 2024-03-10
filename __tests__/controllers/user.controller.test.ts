@@ -4,7 +4,6 @@ import { login, logout, registration, userInfo, validateAccount } from '../../co
 import userModel from '../../model/user.model';
 import ErrorHandler from '../../utils/errorHandler';
 import jwt from 'jsonwebtoken';
-import { sendToken } from '../../utils/sendToken';
 import { redis } from '../../utils/redis';
 
 jest.mock('../../model/user.model');
@@ -151,21 +150,9 @@ describe('login', () => {
         signAccessToken: jest.fn().mockResolvedValue('token'),
         signRefreshToken: jest.fn().mockResolvedValue('refreshToken'),
       });
-    const mockedSendToken = sendToken as jest.Mock;
-    mockedSendToken.mockImplementation(async (user, status, res) => {
-      res.status(status).json({
-        accessToken: 'accessToken',
-        user
-      });
-    });
     await login(req, res, next);
     expect(res.status).toHaveBeenCalledWith(201);
-    expect(res.json).toHaveBeenCalledWith({
-      accessToken: 'accessToken',
-      user: expect.anything(),
-    });
   })
-
 })
 
 

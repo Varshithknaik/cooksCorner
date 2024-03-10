@@ -1,5 +1,5 @@
 import express from 'express'
-import { login, logout, registration, userInfo, validateAccount } from '../controllers/user.controller';
+import { login, logout, refresh, registration, userInfo, validateAccount } from '../controllers/user.controller';
 import { catchAsyncError } from '../middleware/catchAsyncError';
 import { verify } from '../middleware/verify';
 
@@ -14,5 +14,7 @@ userRouter.post('/login', catchAsyncError(login));
 userRouter.get('/logout' , catchAsyncError(verify), catchAsyncError(logout));
 
 userRouter.get('/me', catchAsyncError(verify), catchAsyncError(userInfo));
+
+userRouter.get('/refresh', catchAsyncError(refresh))
 
 export default userRouter;
