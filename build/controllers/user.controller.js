@@ -111,7 +111,7 @@ const logout = async (req, res, next) => {
         await redis_1.redis.del(userId);
         res.status(200).json({
             status: 'success',
-            message: 'Logout successfully'
+            message: 'Logout successful'
         });
     }
     catch (error) {

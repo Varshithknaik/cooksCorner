@@ -164,7 +164,7 @@ describe('logout ', () => {
         expect(res.status).toHaveBeenCalledWith(200);
         expect(res.json).toHaveBeenCalledWith({
             status: 'success',
-            message: 'Logout successfully',
+            message: 'Logout successful',
         });
     });
     it('should handle logout error', async () => {

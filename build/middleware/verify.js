@@ -11,13 +11,14 @@ const verify = async (req, res, next) => {
     try {
         const authorization = req.headers.authorization ?? '';
         const auth = (0, utilFunction_1.authorizationValidation)(authorization.split(' '));
-        const decoded = jsonwebtoken_1.default.verify(auth, process.env.JWT_SECRET ?? 'secret');
+        const decoded = await jsonwebtoken_1.default.verify(auth, process.env.JWT_SECRET ?? 'secret');
+        console.log(decoded);
         if (!decoded) {
-            throw (0, utilFunction_1.handleError)('Invalid token', 403);
+            next((0, utilFunction_1.handleError)('Invalid token', 403));
         }
-        const user = await redis_1.redis.get(decoded._id);
+        const user = await redis_1.redis.get(decoded._id) ?? '';
         if (!user) {
-            throw (0, utilFunction_1.handleError)('Invalid token', 403);
+            next((0, utilFunction_1.handleError)('Invalid token', 403));
         }
         req.user = JSON.parse(user);
         next();

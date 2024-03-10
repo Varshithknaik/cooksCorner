@@ -9,14 +9,15 @@ export const verify = async ( req:Request , res: Response , next: NextFunction) 
     const authorization = req.headers.authorization ?? '';
     const auth = authorizationValidation(authorization.split(' '));
 
-    const decoded = jwt.verify( auth , process.env.JWT_SECRET ??'secret'  ) as { _id: string };
+    const decoded = await jwt.verify( auth , process.env.JWT_SECRET ??'secret'  ) as { _id: string };
+    console.log(decoded);
     if(!decoded){
-      throw handleError('Invalid token', 403)
+      next(handleError('Invalid token', 403))
     }
 
-    const user = await redis.get(decoded._id);
+    const user = await redis.get(decoded._id) ?? '';
     if(!user){
-      throw handleError('Invalid token', 403)
+      next(handleError('Invalid token', 403))
     }
 
     req.user = JSON.parse( user );

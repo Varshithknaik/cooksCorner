@@ -28,6 +28,7 @@
     "@types/jsonwebtoken": "^9.0.6",
     "@types/mongoose": "^5.11.97",
     "@types/nodemailer": "^6.4.14",
+    "@types/sinon": "^17.0.3",
     "@types/supertest": "^6.0.2",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.6",
@@ -44,6 +45,7 @@
     "mongoose": "^8.2.0",
     "moongoose": "^0.0.5",
     "nodemailer": "^6.9.11",
+    "sinon": "^17.0.1",
     "supertest": "^6.3.4",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.3.3"

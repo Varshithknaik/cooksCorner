@@ -3,8 +3,21 @@ import userModel from "../../model/user.model";
 import request from 'supertest';
 import  {app}  from '../../app';
 import jwt from 'jsonwebtoken';
+import { setupReq } from "../__mocks__/req_res";
+import ErrorHandler from "../../utils/errorHandler";
+import sinon from "sinon";
+import { redis } from "../../utils/redis";
 
 jest.mock('jsonwebtoken');
+jest.mock('../../utils/errorHandler', () => {
+  return jest.fn().mockImplementation((message: string, statusCode: number) => {
+     return { message, statusCode };
+  });
+ });
+
+ let redisGetStub: sinon.SinonStub;
+ let redisDelStub: sinon.SinonStub;
+ let jwtVerifyStub: sinon.SinonStub;
 
 // Define an interface for the userModel
 interface IUserModel {
@@ -173,3 +186,149 @@ describe('Validation account integration test', () => {
   });
 })
 
+describe('Login integration test', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should check for missing parameter', async() => {
+    const mockRequest = setupReq('', {email: 'user@gamil.com'});
+    const response = await request(app)
+      .post('/api/v1/login')
+      .send(mockRequest.body);
+
+    expect(response.status).toBe(400);
+    expect(ErrorHandler).toHaveBeenCalledWith('Please fill in all the fields', 400);
+  })
+
+  it('should be able to find the user and validate password', async() => {
+    const mockRequest = setupReq('', { email: 'user@gmail.com', password: 'password123'});
+    (userModel.findOne as jest.Mock).mockResolvedValue({
+      _id: 1 ,
+      name: 'testUser' ,
+      comparePassword: jest.fn().mockResolvedValue(false)
+    });
+    const response = await request(app)
+      .post('/api/v1/login')
+      .send(mockRequest.body);
+
+    expect(response.status).toBe(400);
+    expect(ErrorHandler).toHaveBeenCalledWith('Invalid email or password', 400);
+  });
+
+  it('should be able to login the user with correct credentials', async() => {
+    const mockRequest = setupReq('', { email: 'user@gmail.com', password: 'password123'});
+    (userModel.findOne as jest.Mock).mockResolvedValue({
+      _id: 1 ,
+      name: 'testUser' ,
+      comparePassword: jest.fn().mockResolvedValue(true),
+      signAccessToken: jest.fn().mockResolvedValue('token'),
+      signRefreshToken: jest.fn().mockResolvedValue('refreshToken'),
+    });
+
+    const response = await request(app)
+      .post('/api/v1/login')
+      .send(mockRequest.body);
+    expect(response.status).toBe(201);
+  })
+});
+
+
+describe('logout integration test', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+
+    redisGetStub = sinon.stub(redis, 'get');
+    redisDelStub = sinon.stub(redis, 'del');
+    jwtVerifyStub = sinon.stub(jwt, 'verify');
+  });
+
+  afterEach(() => {
+    redisDelStub.restore();
+    redisGetStub.restore();
+    jwtVerifyStub.restore();
+  })
+
+  it('should be able to logout successfully', async() => {
+    const mockRequest = setupReq('jwtToken', {});
+    redisGetStub.resolves(JSON.stringify({
+      _id: 1,
+      name: 'testUser',
+      email: 'test@example.com',
+      password: 'password123',
+    }));
+    jwtVerifyStub.resolves({ _id: 1 });
+    redisDelStub.resolves();
+
+    const response = await request(app)
+      .get('/api/v1/logout')
+      .set('authorization', 'Bearer jwtToken')
+      .send(mockRequest.body);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveProperty('status', 'success');
+    expect(response.body).toHaveProperty('message', 'Logout successful');
+  });
+
+  it('should return 403 if access token is invalid', async() => {
+    jwtVerifyStub.resolves();
+    const response = await request(app)
+      .get('/api/v1/logout')
+      .set('authorization', 'Bearer jwtToken')
+    expect(response.status).toBe(403);
+    expect(ErrorHandler).toHaveBeenCalledWith('Invalid token', 403);
+  })
+
+  it('should return 403 if user not found in redis', async() => {
+    jwtVerifyStub.returns({ _id: 'user123' });
+    redisGetStub.resolves(null);
+    const response = await request(app)
+      .get('/api/v1/logout')
+      .set('Authorization', 'Bearer your.jwt.token');
+    expect(response.status).toBe(403);
+    expect(ErrorHandler).toHaveBeenCalledWith('Invalid token', 403);
+  })
+
+  it('should return 400 error if authorization not found', async() => {
+    const response = await request(app)
+      .get('/api/v1/logout');
+    expect(response.status).toBe(400);
+    expect(ErrorHandler).toHaveBeenCalledWith('Invalid authorization header', 400);
+  })
+});
+
+describe('userInfo integratiom test', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    redisGetStub = sinon.stub(redis, 'get');
+    jwtVerifyStub = sinon.stub(jwt, 'verify');
+  });
+
+  afterEach(() => {
+    redisDelStub.restore();
+    redisGetStub.restore();
+    jwtVerifyStub.restore();
+  })
+
+  const userInfo = {
+    _id: 1,
+    name: 'testUser',
+    email: 'test@example.com',
+  }
+
+  it('should send userinfo', async () => {
+    const mockRequest = setupReq('jwtToken', {});
+    redisGetStub.resolves(JSON.stringify(userInfo));
+    jwtVerifyStub.resolves({ _id: 1 });
+    const response = await request(app)
+      .get('/api/v1/me')
+      .set('authorization', 'Bearer jwtToken')
+      .send(mockRequest)
+    
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveProperty('status', 'success');
+    expect(response.body).toHaveProperty('data');
+    expect(response.body.data).toHaveProperty('name', userInfo.name);
+    expect(response.body.data).toHaveProperty('email', userInfo.email);
+  })
+})
