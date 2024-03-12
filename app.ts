@@ -13,9 +13,16 @@ app.use(express.json({ limit: '50mb'}));
 // cookie-parser
 app.use(cookieParser())
 
-app.use(cors({
-  origin: ['http://localhost:3000' , 'https://cookscorner-client.onrender.com/']
-}))
+// app.use(cors({
+//   origin: ['http://localhost:3000' , 'https://cookscorner-client.onrender.com/']
+// }))
+
+app.use(
+  cors({
+    origin:  ["https://cookscorner-client.onrender.com/" , 'http://localhost:3000' ],
+    credentials: true
+  })
+);
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes

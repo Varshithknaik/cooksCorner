@@ -7,7 +7,7 @@ import sendMail from '../utils/sendMail';
 import { authorizationValidation, handleError, handleTryCatchError } from '../utils/utilFunction';
 import { refreshTokenCookieOptions, sendToken } from '../utils/sendToken';
 import { redis } from '../utils/redis';
-import { encrypt } from '../utils/encryption';
+import { decrypt, encrypt } from '../utils/encryption';
 dotenv.config();
 
 type IRegistrationBody = {
@@ -92,6 +92,7 @@ export const validateAccount = async ( req:Request , res:Response , next:NextFun
 
 export const login = async ( req:Request , res: Response , next: NextFunction ) => {
   try{
+    console.log( decrypt( req.body.data) )
     const { email , password } = req.body;
     validateInput( email , password );
     const user = await userModel.findOne({ email });
