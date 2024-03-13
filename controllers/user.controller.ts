@@ -67,7 +67,7 @@ export const sendActivationEmail = async (email: string, name: string, activatio
 }
 export const validateAccount = async ( req:Request , res:Response , next:NextFunction) => {
   try{
-    const { password , name , activationCode } = req.body;
+    const { password , name , activationCode } = JSON.parse( decrypt(req.body.data));
     const authorizationHeader = req.headers.authorization ?? '';
     const auth = authorizationValidation(authorizationHeader.split(' '));
     
@@ -92,16 +92,15 @@ export const validateAccount = async ( req:Request , res:Response , next:NextFun
 
 export const login = async ( req:Request , res: Response , next: NextFunction ) => {
   try{
-    console.log( decrypt( req.body.data) )
-    const { email , password } = req.body;
+    const { email , password } = JSON.parse( decrypt(req.body.data));
     validateInput( email , password );
     const user = await userModel.findOne({ email });
     if(!user){
-      throw handleError('User does not exist', 400);
+      return next(handleError('User does not exist', 400));
     }
     const isPasswordValid = await user.comparePassword(password);
     if(!isPasswordValid){
-      throw handleError('Invalid email or password', 400);
+      return next(handleError('Invalid email or password', 400));
     }
 
     sendToken(user , 201 , res)
@@ -141,7 +140,7 @@ export const refresh = async( req: Request , res: Response , next:NextFunction) 
   try{
     const token = req.cookies.refreshToken;
 
-    const decoded = await jwt.sign( token , process.env.REFRESH_TOKEN_SECRET ?? 'secret') as unknown as { _id: string};
+    const decoded = jwt.sign( token , process.env.REFRESH_TOKEN_SECRET ?? 'secret') as unknown as { _id: string};
     if(!decoded){
       next(handleError('Could not refresh the token', 401))
     }

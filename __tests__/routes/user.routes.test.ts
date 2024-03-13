@@ -192,6 +192,9 @@ describe('Login integration test', () => {
   });
 
   it('should check for missing parameter', async() => {
+    // jest.mock('./path/to/decrypt', () => ({
+    //   decrypt: jest.fn().mockReturnValue(JSON.stringify({ email: 'user@gmail.com', password: 'password123' })),
+    // }));
     const mockRequest = setupReq('', {email: 'user@gamil.com'});
     const response = await request(app)
       .post('/api/v1/login')
