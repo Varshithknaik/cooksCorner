@@ -20,17 +20,11 @@ export const refreshTokenCookieOptions: ICookie = {
 export const sendToken = async (user: IUser , status:number , res: Response ) => {
   const accessToken = user.signAccessToken();
   const refreshToken = user.signRefreshToken();
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { password , ...userWithoutPassword } = user;
-
   res.cookie('refreshToken' , refreshToken , refreshTokenCookieOptions)
-  
-  await redis.set(user._id , JSON.stringify(userWithoutPassword) , "EX" , 7 * 24 * 60 * 60)
+  await redis.set(user._id , JSON.stringify(user) , "EX" , 7 * 24 * 60 * 60)
   const encryptedBody = encrypt(JSON.stringify({
       accessToken,
-      user: userWithoutPassword
+      user
     }))
-  console.log(encryptedBody);
-  res.status(status).json(encryptedBody)
+  res.status(status).json({ status: 'success' , data: encryptedBody})
 }

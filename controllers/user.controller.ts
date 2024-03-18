@@ -23,7 +23,7 @@ export const registration = async (req: Request, res: Response, next: NextFuncti
     await checkIfEmailExists(email);
     const activationCode = generateActivationCode();
     const payload = { email , activationCode};
-    const activationToken = generateActivationToken( payload , '1h' );
+    const activationToken = generateActivationToken( payload , process.env.ACTIVATION_TOKEN_SECRET! ,'1h' );
     await sendActivationEmail(email, name, activationCode);
     res.status(201).json({
       status: 'success',
@@ -47,8 +47,8 @@ export const checkIfEmailExists = async (email: string) => {
   }
 }
 
-export const generateActivationToken = ( payload: {[key:string] : string } , expiration:string ) => {
-  return jwt.sign(payload, process.env.ACTIVATION_TOKEN_SECRET ?? 'secret', { expiresIn: expiration });
+export const generateActivationToken = ( payload: {[key:string] : string } , secret:string , expiration:string ) => {
+  return jwt.sign(payload, secret, { expiresIn: expiration });
 }
 
 export const generateActivationCode = () => {
@@ -140,12 +140,12 @@ export const refresh = async( req: Request , res: Response , next:NextFunction) 
   try{
     const token = req.cookies.refreshToken;
 
-    const decoded = jwt.sign( token , process.env.REFRESH_TOKEN_SECRET ?? 'secret') as unknown as { _id: string};
+    const decoded = await jwt.verify( token , process.env.REFRESH_TOKEN_SECRET ?? 'secret') as unknown as { id: string};
     if(!decoded){
       next(handleError('Could not refresh the token', 401))
     }
 
-    const session = await redis.get(decoded?._id);
+    const session = await redis.get(decoded?.id);
 
     if(!session){
       next(handleError('Session expired please login again', 401))
@@ -153,8 +153,8 @@ export const refresh = async( req: Request , res: Response , next:NextFunction) 
 
     const user = JSON.parse(session as string);
 
-    const refreshToken = await generateActivationToken({ _id: user._id } , '7d');
-    const accessToken = await generateActivationToken({ _id: user._id } , '5m');
+    const refreshToken = await generateActivationToken({ id: user._id } , process.env.REFRESH_TOKEN_SECRET! , '7d');
+    const accessToken = await generateActivationToken({ id: user._id }, process.env.ACCESS_TOKEN_SECRET! , '5m');
     await redis.set(user._id, JSON.stringify(user), 'EX', 60 * 60 * 24 * 7);
     res.cookie('refreshToken', refreshToken , refreshTokenCookieOptions);
 

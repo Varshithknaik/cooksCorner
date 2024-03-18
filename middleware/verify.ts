@@ -7,14 +7,17 @@ import { redis } from "../utils/redis";
 export const verify = async ( req:Request , res: Response , next: NextFunction) => {
   try {
     const authorization = req.headers.authorization ?? '';
+    if(!authorization){
+      next(handleError('Invalid token', 403))
+    }
     const auth = authorizationValidation(authorization.split(' '));
 
-    const decoded = await jwt.verify( auth , process.env.JWT_SECRET ??'secret'  ) as { _id: string };
+    const decoded = await jwt.verify( auth , process.env.ACCESS_TOKEN_SECRET!  ) as { id: string };
     if(!decoded){
       next(handleError('Invalid token', 403))
     }
 
-    const user = await redis.get(decoded._id) ?? '';
+    const user = await redis.get(decoded.id) ?? '';
     if(!user){
       next(handleError('Invalid token', 403))
     }

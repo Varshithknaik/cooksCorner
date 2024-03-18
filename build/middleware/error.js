@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ErrorMiddleware = void 0;
 const errorHandler_1 = __importDefault(require("../utils/errorHandler"));
-const ErrorMiddleware = (err, req, res) => {
+const ErrorMiddleware = (err, req, res, next) => {
     err.statusCode = err.statusCode || 500;
     err.message = err.message || "Internal Server Error";
     // Wrong MongoDB id error
@@ -32,5 +32,6 @@ const ErrorMiddleware = (err, req, res) => {
         success: false,
         message: err.message,
     });
+    next();
 };
 exports.ErrorMiddleware = ErrorMiddleware;
